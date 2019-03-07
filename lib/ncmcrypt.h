@@ -39,9 +39,9 @@ public:
 class ncmdump::NeteaseCrypt {
 
 private:
-	static const unsigned char sCoreKey[17];
-	static const unsigned char sModifyKey[17];
-	static const unsigned char mPng[8];
+	static const uint8_t sCoreKey[17];
+	static const uint8_t sModifyKey[17];
+	static const uint8_t mPng[8];
 	enum NcmFormat { MP3, FLAC };
 
 private:
@@ -50,14 +50,14 @@ private:
 	NcmFormat mFormat;
 	std::string mImageData;
 	std::ifstream mFile;
-	unsigned char mKeyBox[256];
+	uint8_t mKeyBox[256];
 	NeteaseMusicMetadata* mMetaData;
 
 private:
 	bool isNcmFile();
 	bool openFile(std::string const&);
 	int read(char *s, std::streamsize n);
-	void buildKeyBox(unsigned char *key, int keyLen);
+	void buildKeyBox(uint8_t *key, int keyLen);
 	std::string mimeType(std::string& data);
 
 public:

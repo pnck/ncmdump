@@ -70,21 +70,21 @@ std::string ncmdump::base64::encode(const uint8_t *data, size_t len) {
     auto p = std::back_inserter(out);
     size_t i = 0;
     for (; i < len; i += 3) {
-        *p++ = sEncodingTable[(data[i] >> 2) & 0x3F];
-        *p++ = sEncodingTable[((data[i] & 0x3) << 4) | ((data[i + 1] & 0xF0) >> 4)];
-        *p++ = sEncodingTable[((data[i + 1] & 0xF) << 2) | ((data[i + 2] & 0xC0) >> 6)];
-        *p++ = sEncodingTable[data[i + 2] & 0x3F];
+        p = sEncodingTable[(data[i] >> 2) & 0x3F];
+        p = sEncodingTable[((data[i] & 0x3) << 4) | ((data[i + 1] & 0xF0) >> 4)];
+        p = sEncodingTable[((data[i + 1] & 0xF) << 2) | ((data[i + 2] & 0xC0) >> 6)];
+        p = sEncodingTable[data[i + 2] & 0x3F];
     }
     if (i < len) {
-        *p++ = sEncodingTable[(data[i] >> 2) & 0x3F];
+        p = sEncodingTable[(data[i] >> 2) & 0x3F];
         if (i == (len - 1)) {
-            *p++ = sEncodingTable[((data[i] & 0x3) << 4)];
-            *p++ = '=';
+            p = sEncodingTable[((data[i] & 0x3) << 4)];
+            p = '=';
         } else {
-            *p++ = sEncodingTable[((data[i] & 0x3) << 4) | ((data[i + 1] & 0xF0) >> 4)];
-            *p++ = sEncodingTable[((data[i + 1] & 0xF) << 2)];
+            p = sEncodingTable[((data[i] & 0x3) << 4) | ((data[i + 1] & 0xF0) >> 4)];
+            p = sEncodingTable[((data[i + 1] & 0xF) << 2)];
         }
-        *p++ = '=';
+        p = '=';
     }
     return out;
 }
@@ -104,9 +104,9 @@ std::vector<uint8_t> ncmdump::base64::decode(const char *s, size_t len) {
 
         auto triple = (a << 3 * 6) + (b << 2 * 6) + (c << 1 * 6) + (d << 0 * 6);
 
-        *p++ = (triple >> 2 * 8) & 0xFF;
-        *p++ = (triple >> 1 * 8) & 0xFF;
-        *p++ = (triple >> 0 * 8) & 0xFF;
+        p = (triple >> 2 * 8) & 0xFF;
+        p = (triple >> 1 * 8) & 0xFF;
+        p = (triple >> 0 * 8) & 0xFF;
     }
     return out;
 }

@@ -10,31 +10,36 @@
 #include <taglib/tag.h>
 
 #include <string>
+#include <cstring>
 
 using namespace ncmdump;
 
-const unsigned char NeteaseCrypt::sCoreKey[17]   = {0x68, 0x7A, 0x48, 0x52, 0x41, 0x6D, 0x73, 0x6F, 0x35, 0x6B, 0x49, 0x6E, 0x62, 0x61, 0x78, 0x57, 0};
-const unsigned char NeteaseCrypt::sModifyKey[17] = {0x23, 0x31, 0x34, 0x6C, 0x6A, 0x6B, 0x5F, 0x21, 0x5C, 0x5D, 0x26, 0x30, 0x55, 0x3C, 0x27, 0x28, 0};
+const uint8_t NeteaseCrypt::sCoreKey[17]   = {0x68, 0x7A, 0x48, 0x52, 0x41, 0x6D, 0x73, 0x6F, 0x35, 0x6B, 0x49, 0x6E, 0x62, 0x61, 0x78, 0x57, 0};
+const uint8_t NeteaseCrypt::sModifyKey[17] = {0x23, 0x31, 0x34, 0x6C, 0x6A, 0x6B, 0x5F, 0x21, 0x5C, 0x5D, 0x26, 0x30, 0x55, 0x3C, 0x27, 0x28, 0};
 
-const unsigned char NeteaseCrypt::mPng[8] = {0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
+const uint8_t NeteaseCrypt::mPng[8] = {0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
 
-static void aesEcbDecrypt(const unsigned char *key, std::string& src, std::string& dst) {
+static void aesEcbDecrypt(const uint8_t *key, std::string& src, std::string& dst) {
 	int n, i;
 
-	unsigned char out[16];
+	uint8_t out[16];
 
 	n = src.length() >> 4;
 
 	dst.clear();
 
-	AES aes(key);
-
+	uint8_t _[16];
+	memcpy(_,key,16);
+	uint8_t (&_key)[16] = _ ;
+	AES aes(_key);
+	uint8_t data[16];
 	for (i = 0; i < n-1; i++) {
-		aes.decrypt((unsigned char*)src.c_str() + (i << 4), out);
+		memcpy(data,(uint8_t *) src.c_str() + (i << 4),16);
+        aes.decrypt_block(data, out);
 		dst += std::string((char*)out, 16);
 	}
-
-	aes.decrypt((unsigned char*)src.c_str() + (i << 4), out);
+	memcpy(data,(uint8_t *) src.c_str() + (i << 4),16);
+    aes.decrypt_block(data, out);
 	char pad = out[15];
 	if (pad > 16) {
 		pad = 0;
@@ -152,16 +157,16 @@ int NeteaseCrypt::read(char *s, std::streamsize n) {
 	return gcount;
 }
 
-void NeteaseCrypt::buildKeyBox(unsigned char *key, int keyLen) {
+void NeteaseCrypt::buildKeyBox(uint8_t *key, int keyLen) {
 	int i;
 	for (i = 0; i < 256; ++i) {
-		mKeyBox[i] = (unsigned char)i;
+		mKeyBox[i] = (uint8_t)i;
 	}
 
-	unsigned char swap = 0;
-	unsigned char c = 0;
-	unsigned char last_byte = 0;
-	unsigned char key_offset = 0;
+	uint8_t swap = 0;
+	uint8_t c = 0;
+	uint8_t last_byte = 0;
+	uint8_t key_offset = 0;
 
 	for (i = 0; i < 256; ++i)
 	{
@@ -252,7 +257,7 @@ void NeteaseCrypt::Dump() {
 	n = 0x8000;
 	i = 0;
 
-	unsigned char buffer[n];
+	uint8_t buffer[n];
 
 	std::ofstream output;
 
@@ -329,7 +334,7 @@ NeteaseCrypt::NeteaseCrypt(std::string const& path) {
 
 	aesEcbDecrypt(sCoreKey, rawKeyData, mKeyData);
 
-	buildKeyBox((unsigned char*)mKeyData.c_str()+17, mKeyData.length()-17);
+	buildKeyBox((uint8_t*)mKeyData.c_str()+17, mKeyData.length()-17);
 
 	read(reinterpret_cast<char *>(&n), sizeof(n));
 

@@ -1,57 +1,66 @@
 #pragma once
 
-#include <string.h>
-#include <stdio.h>
-
+#include <cstdint>
+#include <utility>
+#include <cstddef>
+namespace ncmdump {
 class AES {
 
 public:
     AES();
-    AES(const unsigned char *key);
+    template<size_t keylen>
+    explicit AES(const uint8_t (&key)[keylen]) {
+        setKey(key);
+        keyExpansion();
+    }
+
     virtual ~AES();
-    void encrypt(const unsigned char data[16], unsigned char out[16]);
-    void decrypt(const unsigned char data[16], unsigned char out[16]);
+    void encrypt_block(const uint8_t (&data)[16], uint8_t (&out)[16]);
+    void decrypt_block(const uint8_t (&data)[16], uint8_t (&out)[16]);
 
 private:
-    //
-    int mNb;
+    //Number of columns
+    int mNb{};
 
     //word length of the secret key used in one turn 
-    int mNk;
+    int mNk{};
 
     //number of turns
-    int mNr;
+    int mNr{};
 
     //the secret key,which can be 16bytes，24bytes or 32bytes
-    unsigned char mKey[32];
+    uint8_t mKey[32];
 
     //the extended key,which can be 176bytes,208bytes,240bytes
-    unsigned char mW[60][4];
+    uint8_t mW[60][4];
 
-    static unsigned char sBox[];
-    static unsigned char invSBox[];
+    static const uint8_t sBox[];
+    static const uint8_t invSBox[];
     //constant 
-    static unsigned char rcon[];
-    void setKey(const unsigned char *key);
+    static uint8_t rcon[];
+    void setKey(const uint8_t (&key)[16]);
+    void setKey(const uint8_t (&key)[24]);
+    void setKey(const uint8_t (&key)[32]);
 
-    void subBytes(unsigned char state[][4]);
-    void shiftRows(unsigned char state[][4]);
-    void mixColumns(unsigned char state[][4]);
-    void addRoundKey(unsigned char state[][4], unsigned char w[][4]);
+    void subBytes(uint8_t state[][4]);
+    void shiftRows(uint8_t state[][4]);
+    void mixColumns(uint8_t state[][4]);
+    void addRoundKey(uint8_t state[][4], uint8_t w[][4]);
 
-    void invSubBytes(unsigned char state[][4]);
-    void invShiftRows(unsigned char state[][4]);
-    void invMixColumns(unsigned char state[][4]);
+    void invSubBytes(uint8_t state[][4]);
+    void invShiftRows(uint8_t state[][4]);
+    void invMixColumns(uint8_t state[][4]);
 
     void keyExpansion();
 
     //
-    unsigned char GF28Multi(unsigned char s, unsigned char a);
+    uint8_t GF28Multi(uint8_t s, uint8_t a);
 
-    void rotWord(unsigned char w[]);
-    void subWord(unsigned char w[]);
+    void rotWord(uint8_t w[]);
+    void subWord(uint8_t w[]);
 
     //get the secret key
-    void getKeyAt(unsigned char key[][4],int i);
+    void getKeyAt(uint8_t key[][4], int i);
 
 };
+}// namespace ncmdump
