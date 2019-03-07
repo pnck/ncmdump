@@ -9,8 +9,9 @@
 #include <taglib/id3v2tag.h>
 #include <taglib/tag.h>
 
-#include <stdexcept>
 #include <string>
+
+using namespace ncmdump;
 
 const unsigned char NeteaseCrypt::sCoreKey[17]   = {0x68, 0x7A, 0x48, 0x52, 0x41, 0x6D, 0x73, 0x6F, 0x35, 0x6B, 0x49, 0x6E, 0x62, 0x61, 0x78, 0x57, 0};
 const unsigned char NeteaseCrypt::sModifyKey[17] = {0x23, 0x31, 0x34, 0x6C, 0x6A, 0x6B, 0x5F, 0x21, 0x5C, 0x5D, 0x26, 0x30, 0x55, 0x3C, 0x27, 0x28, 0};
@@ -67,6 +68,9 @@ NeteaseMusicMetadata::NeteaseMusicMetadata(cJSON* raw) {
 	if (!raw) {
 		return;
 	}
+	char * _meta = cJSON_Print(raw);
+	std::cout<<"METADATA>>\n"<<_meta<<std::endl;
+	free(_meta);
 
 	cJSON *swap;
 	int artistLen, i;
@@ -342,15 +346,15 @@ NeteaseCrypt::NeteaseCrypt(std::string const& path) {
 		}
 
 		std::string swapModifyData;
-		std::string modifyOutData;
 		std::string modifyDecryptData;
 
 		swapModifyData = std::string(modifyData + 22, n - 22);
 
 		// escape `163 key(Don't modify):`
-		Base64::Decode(swapModifyData, modifyOutData);
-
-		aesEcbDecrypt(sModifyKey, modifyOutData, modifyDecryptData);
+		auto modifyOutData = base64::decode(swapModifyData);
+		// fixme: temporary adapt
+		auto _modifyOutData = std::string(modifyOutData.begin(),modifyOutData.end());
+		aesEcbDecrypt(sModifyKey, _modifyOutData, modifyDecryptData);
 
 		// escape `music:`
 		modifyDecryptData = std::string(modifyDecryptData.begin()+6, modifyDecryptData.end());

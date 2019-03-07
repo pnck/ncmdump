@@ -6,7 +6,12 @@
 #include <iostream>
 #include <fstream>
 
-class NeteaseMusicMetadata {
+namespace ncmdump {
+class NeteaseMusicMetadata;
+class NeteaseCrypt;
+}
+
+class ncmdump::NeteaseMusicMetadata {
 
 private:
 	std::string mAlbum;
@@ -20,7 +25,7 @@ private:
 	cJSON* mRaw;
 
 public:
-	NeteaseMusicMetadata(cJSON*);
+	explicit NeteaseMusicMetadata(cJSON*);
 	~NeteaseMusicMetadata();
     const std::string& name() const { return mName; }
     const std::string& album() const { return mAlbum; }
@@ -31,7 +36,7 @@ public:
 
 };
 
-class NeteaseCrypt {
+class ncmdump::NeteaseCrypt {
 
 private:
 	static const unsigned char sCoreKey[17];
@@ -60,7 +65,7 @@ public:
 	const std::string& dumpFilepath() const { return mDumpFilepath; }
 
 public:
-	NeteaseCrypt(std::string const&);
+	explicit NeteaseCrypt(std::string const&);
 	~NeteaseCrypt();
 
 public:

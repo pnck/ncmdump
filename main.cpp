@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
 	try {
 		int i;
 		for (i = 1; i < argc; i++) {
-			NeteaseCrypt crypt(argv[i]);
+			ncmdump::NeteaseCrypt crypt(argv[i]);
 			crypt.Dump();
 			crypt.FixMetadata();
 			
