@@ -2,19 +2,12 @@ cmake_minimum_required(VERSION 3.0)
 project(ncmdump)
 
 set(CMAKE_CXX_STANDARD 14)
-set(SOURCE
-        aes.cpp
-        aes.h
-        base64.h
-        cJSON.cpp
-        cJSON.h
-        ncmcrypt.cpp
-        ncmcrypt.h)
+file(GLOB SOURCES lib/*.h lib/*.cpp)
 
 # will add option to select target type and language binding
-add_executable(${PROJECT_NAME} main.cpp ${SOURCE})
-# add_library(${PROJECT_NAME} SHARED ${SOURCE})
-include_directories(.)
+add_executable(${PROJECT_NAME} main.cpp ${SOURCES})
+# add_library(${PROJECT_NAME} SHARED ${SOURCES})
+include_directories(lib)
 if (UNIX)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(TAGLIB REQUIRED taglib)
