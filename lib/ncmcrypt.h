@@ -14,23 +14,23 @@ class NeteaseCrypt;
 class ncmdump::NeteaseMusicMetadata {
 
 private:
-	std::string mAlbum;
-	std::string mArtist;
-	std::string mFormat;
-	std::string mName;
-	int mDuration;
-	int mBitrate;
+    std::string mAlbum;
+    std::string mArtist;
+    std::string mFormat;
+    std::string mName;
+    int mDuration;
+    int mBitrate;
 
 private:
-	cJSON* mRaw;
+    cJSON *mRaw;
 
 public:
-	explicit NeteaseMusicMetadata(cJSON*);
-	~NeteaseMusicMetadata();
-    const std::string& name() const { return mName; }
-    const std::string& album() const { return mAlbum; }
-    const std::string& artist() const { return mArtist; }
-    const std::string& format() const { return mFormat; }
+    explicit NeteaseMusicMetadata(cJSON *);
+    ~NeteaseMusicMetadata();
+    const std::string &name() const { return mName; }
+    const std::string &album() const { return mAlbum; }
+    const std::string &artist() const { return mArtist; }
+    const std::string &format() const { return mFormat; }
     const int duration() const { return mDuration; }
     const int bitrate() const { return mBitrate; }
 
@@ -39,36 +39,36 @@ public:
 class ncmdump::NeteaseCrypt {
 
 private:
-	static const uint8_t sCoreKey[17];
-	static const uint8_t sModifyKey[17];
-	static const uint8_t mPng[8];
-	enum NcmFormat { MP3, FLAC };
+    static const uint8_t sCoreKey[16];
+    static const uint8_t sModifyKey[16];
+    static const uint8_t mPng[8];
+    enum NcmFormat { MP3, FLAC };
 
 private:
-	std::string mFilepath;
-	std::string mDumpFilepath;
-	NcmFormat mFormat;
-	std::string mImageData;
-	std::ifstream mFile;
-	uint8_t mKeyBox[256];
-	NeteaseMusicMetadata* mMetaData;
+    std::string mFilepath;
+    std::string mDumpFilepath;
+    NcmFormat mFormat;
+    std::string mImageData;
+    std::ifstream mFile;
+    uint8_t mRC4KeyBox[256];
+    NeteaseMusicMetadata *mMetaData{};
 
 private:
-	bool isNcmFile();
-	bool openFile(std::string const&);
-	int read(char *s, std::streamsize n);
-	void buildKeyBox(uint8_t *key, int keyLen);
-	std::string mimeType(std::string& data);
+    bool isNcmFile();
+    bool openFile(std::string const &);
+    std::streamsize read(void *p, std::streamsize n);
+    void buildRC4KeyBox(uint8_t *key, size_t keyLen);
+    std::string mimeType(std::string &data);
 
 public:
-	const std::string& filepath() const { return mFilepath; }
-	const std::string& dumpFilepath() const { return mDumpFilepath; }
+    const std::string &filepath() const { return mFilepath; }
+    const std::string &dumpFilepath() const { return mDumpFilepath; }
 
 public:
-	explicit NeteaseCrypt(std::string const&);
-	~NeteaseCrypt();
+    explicit NeteaseCrypt(const std::string &);
+    ~NeteaseCrypt();
 
 public:
-	void Dump();
-	void FixMetadata();
+    void Dump();
+    void FixMetadata();
 };

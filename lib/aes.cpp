@@ -1,8 +1,9 @@
 #include "aes.h"
 #include <cstring>
 #include <utility>
+#include <vector>
 
-using namespace ncmdump;
+using namespace ncmdump::aes;
 
 const uint8_t AES::sBox[] =
     { //  0     1     2     3     4     5     6     7     8     9     a     b     c     d     e     f
@@ -287,14 +288,11 @@ void AES::decrypt_block(const uint8_t (&data)[16], uint8_t (&out)[16]) {
 }
 
 //get the secret key for round "index",which will
-//be arranged vetically
+//be arranged vertically
 void AES::getKeyAt(uint8_t key[][4], int index) {
     for (int i = index * 4; i < index * 4 + 4; i++) {
         for (int j = 0; j < 4; j++) {
             key[j][i - index * 4] = mW[i][j];
         }
     }
-}
-
-AES::~AES() {
 }
