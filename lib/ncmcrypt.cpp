@@ -46,61 +46,50 @@ NeteaseMusicMetadata::NeteaseMusicMetadata(cJSON *raw) {
     if (!raw) {
         return;
     }
+    mRaw = raw;
+/*
     char *_meta = cJSON_Print(raw);
     std::cout << "METADATA>>\n" << _meta << std::endl;
     free(_meta);
-
-    cJSON *swap;
-    int artistLen, i;
-
-    mRaw = raw;
-
-    swap = cJSON_GetObjectItem(raw, "musicName");
-    if (swap) {
-        mName = std::string(cJSON_GetStringValue(swap));
-    }
-
-    swap = cJSON_GetObjectItem(raw, "album");
-    if (swap) {
-        mAlbum = std::string(cJSON_GetStringValue(swap));
-    }
-
-    swap = cJSON_GetObjectItem(raw, "artist");
-    if (swap) {
-        artistLen = cJSON_GetArraySize(swap);
-
-        i = 0;
-        for (i = 0; i < artistLen - 1; i++) {
-            mArtist += std::string(cJSON_GetStringValue(cJSON_GetArrayItem(cJSON_GetArrayItem(swap, i), 0)));
-            mArtist += "/";
+*/
+    cJSON *member = nullptr;
+    cJSON_ArrayForEach(member, raw) {
+        char *field = member->string;
+        if (!strcasecmp(field, "musicName")) {
+            mName = cJSON_GetStringValue(member);
+            continue;
+        } else if (!strcasecmp(field, "album")) {
+            mAlbum = cJSON_GetStringValue(member);
+            continue;
+        } else if (!strcasecmp(field, "artist")) {
+            cJSON *artist = nullptr;
+            cJSON_ArrayForEach(artist, member) {
+                if (mArtist.length()) {
+                    mArtist += "/";
+                }
+                mArtist += cJSON_GetStringValue(cJSON_GetArrayItem(artist, 0));
+            }
+            continue;
+        } else if (!strcasecmp(field, "bitrate")) {
+            mBitrate = member->valueint;
+            continue;
+        } else if (!strcasecmp(field, "duration")) {
+            mDuration = member->valueint;
+            continue;
+        } else if (!strcasecmp(field, "format")) {
+            mFormat = cJSON_GetStringValue(member);
+            continue;
         }
-        mArtist += std::string(cJSON_GetStringValue(cJSON_GetArrayItem(cJSON_GetArrayItem(swap, i), 0)));
-    }
-
-    swap = cJSON_GetObjectItem(raw, "bitrate");
-    if (swap) {
-        mBitrate = swap->valueint;
-    }
-
-    swap = cJSON_GetObjectItem(raw, "duration");
-    if (swap) {
-        mDuration = swap->valueint;
-    }
-
-    swap = cJSON_GetObjectItem(raw, "format");
-    if (swap) {
-        mFormat = std::string(cJSON_GetStringValue(swap));
     }
 }
 
 bool NeteaseCrypt::openFile(std::string const &path) {
     try {
         mFile.open(path, std::ios::in | std::ios::binary);
-        return bool(mFile);
     } catch (...) {
         return false;
     }
-    return true;
+    return bool(mFile);
 }
 
 bool NeteaseCrypt::isNcmFile() {
@@ -138,10 +127,10 @@ void NeteaseCrypt::buildRC4KeyBox(uint8_t *key, size_t keyLen) {
 
 std::string NeteaseCrypt::mimeType(std::string &data) {
     if (memcmp(data.c_str(), mPng, 8) == 0) {
-        return std::string("image/png");
+        return "image/png";
     }
 
-    return std::string("image/jpeg");
+    return "image/jpeg";
 }
 
 void NeteaseCrypt::FixMetadata() {
@@ -270,19 +259,19 @@ NeteaseCrypt::NeteaseCrypt(const std::string &path) {
     }
 
     mFilepath = path;
-    uint32_t key_len = 0;
-    read(&key_len, sizeof(key_len));
+    uint32_t read_len = 0;
+    read(&read_len, sizeof(read_len));
 
-    if (key_len <= 0) {
+    if (read_len <= 0) {
         throw std::invalid_argument("broken ncm file");
     }
-    std::vector<uint8_t> key_data(key_len);
-    read(key_data.data(), key_len);
+    std::vector<uint8_t> key_data(read_len);
+    read(key_data.data(), read_len);
     for (auto &c:key_data) {
         c ^= 0x64;
     }
 
-    key_data = aes::ecb_decrypt(sCoreKey, key_data.data(), key_len);
+    key_data = aes::ecb_decrypt(sCoreKey, key_data.data(), read_len);
     // looks like `neteasecloudmusic1226132383402E7fT49x7dof9OKCgg9cdvhEuezy3iZCL1nFvBFd1T4uSktAJKmwZXsijPbijliionVUXXg9plTbXEclAE9Lb`
     // skip `neteasecloudmusic` header
     buildRC4KeyBox(key_data.data() + 17, key_data.size() - 17);
@@ -317,13 +306,13 @@ NeteaseCrypt::NeteaseCrypt(const std::string &path) {
         throw std::invalid_argument("can't seek file");
     }
 
-    read(reinterpret_cast<char *>(&key_len), sizeof(key_len));
+    read(&read_len, sizeof(read_len));
 
-    if (key_len > 0) {
-        char *imageData = (char *) malloc(key_len);
-        read(imageData, key_len);
+    if (read_len > 0) {
+        char *imageData = (char *) malloc(read_len);
+        read(imageData, read_len);
 
-        mImageData = std::string(imageData, key_len);
+        mImageData = std::string(imageData, read_len);
     } else {
         printf("[Warn] `%s` missing album can't fix album image!\n", path.c_str());
     }
