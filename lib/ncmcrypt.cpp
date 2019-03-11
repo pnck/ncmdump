@@ -125,8 +125,8 @@ void NeteaseCrypt::buildRC4KeyBox(uint8_t *key, size_t keyLen) {
     }
 }
 
-std::string NeteaseCrypt::mimeType(std::string &data) {
-    if (memcmp(data.c_str(), mPng, 8) == 0) {
+const char *NeteaseCrypt::mimeType(std::vector<uint8_t> &data) {
+    if (data.size() >= 8 && memcmp(data.data(), mPng, 8) == 0) {
         return "image/png";
     }
 
@@ -138,49 +138,46 @@ void NeteaseCrypt::FixMetadata() {
         throw std::invalid_argument("must dump before");
     }
 
-    TagLib::File *audioFile;
-    TagLib::Tag *tag;
-    TagLib::ByteVector vector(mImageData.c_str(), mImageData.length());
+    TagLib::ByteVector vector(reinterpret_cast<char *>(mImageData.data()), mImageData.size());
+    auto add_general_info = [this](TagLib::Tag *tag) {
+        if (mMetaData) {
+            tag->setTitle(TagLib::String(mMetaData->name(), TagLib::String::UTF8));
+            tag->setArtist(TagLib::String(mMetaData->artist(), TagLib::String::UTF8));
+            tag->setAlbum(TagLib::String(mMetaData->album(), TagLib::String::UTF8));
+        }
+
+        tag->setComment(TagLib::String("Create by netease copyright protected dump tool. author 5L",
+                                       TagLib::String::UTF8));
+    };
 
     if (mFormat == NeteaseCrypt::MP3) {
-        audioFile = new TagLib::MPEG::File(mDumpFilepath.c_str());
-        tag = dynamic_cast<TagLib::MPEG::File *>(audioFile)->ID3v2Tag(true);
+        TagLib::MPEG::File audioFile(mDumpFilepath.c_str());
+        auto tag = audioFile.ID3v2Tag(true);
 
-        if (mImageData.length() > 0) {
-            TagLib::ID3v2::AttachedPictureFrame *frame = new TagLib::ID3v2::AttachedPictureFrame;
-
+        if (!mImageData.empty()) {
+            auto *frame = new TagLib::ID3v2::AttachedPictureFrame{};
             frame->setMimeType(mimeType(mImageData));
             frame->setPicture(vector);
-
-            dynamic_cast<TagLib::ID3v2::Tag *>(tag)->addFrame(frame);
+            tag->addFrame(frame);
         }
+        add_general_info(tag);
+        audioFile.save();
     } else if (mFormat == NeteaseCrypt::FLAC) {
-        audioFile = new TagLib::FLAC::File(mDumpFilepath.c_str());
-        tag = audioFile->tag();
-
-        if (mImageData.length() > 0) {
-            TagLib::FLAC::Picture *cover = new TagLib::FLAC::Picture;
+        TagLib::FLAC::File audioFile(mDumpFilepath.c_str());
+        if (!mImageData.empty()) {
+            auto *cover = new TagLib::FLAC::Picture{};
             cover->setMimeType(mimeType(mImageData));
             cover->setType(TagLib::FLAC::Picture::FrontCover);
             cover->setData(vector);
 
-            dynamic_cast<TagLib::FLAC::File *>(audioFile)->addPicture(cover);
+            audioFile.addPicture(cover);
         }
+        add_general_info(audioFile.tag());
+        audioFile.save();
     }
-
-    if (mMetaData != NULL) {
-        tag->setTitle(TagLib::String(mMetaData->name(), TagLib::String::UTF8));
-        tag->setArtist(TagLib::String(mMetaData->artist(), TagLib::String::UTF8));
-        tag->setAlbum(TagLib::String(mMetaData->album(), TagLib::String::UTF8));
-    }
-
-    tag->setComment(TagLib::String("Create by netease copyright protected dump tool. author 5L", TagLib::String::UTF8));
-
-    audioFile->save();
 }
 
 void NeteaseCrypt::Dump() {
-    int n, i;
 
     // mDumpFilepath.clear();
     // mDumpFilepath.resize(1024);
@@ -198,20 +195,19 @@ void NeteaseCrypt::Dump() {
     // 	replace(mDumpFilepath, ">", "＞");
     // 	replace(mDumpFilepath, "|", "｜");
     // } else {
-    mDumpFilepath = fileNameWithoutExt(mFilepath);
+    size_t lastExt = mFilepath.find_last_of('.');
+    mDumpFilepath = mFilepath.substr(0, lastExt);
+    //mDumpFilepath = fileNameWithoutExt(mFilepath);
     // }
 
-    n = 0x8000;
-    i = 0;
-
-    uint8_t buffer[n];
-
+    size_t n = 0x8000;
+    std::vector<uint8_t> buffer(n);
     std::ofstream output;
 
     while (!mFile.eof()) {
-        n = read((char *) buffer, n);
+        n = static_cast<size_t>(read(buffer.data(), n));
 
-        for (i = 0; i < n; i++) {
+        for (auto i = 0; i < n; i++) {
             int j = (i + 1) & 0xff;
             buffer[i] ^= mRC4KeyBox[(mRC4KeyBox[j] + mRC4KeyBox[(mRC4KeyBox[j] + j) & 0xff]) & 0xff];
         }
@@ -226,23 +222,20 @@ void NeteaseCrypt::Dump() {
                 mDumpFilepath += ".flac";
                 mFormat = NeteaseCrypt::FLAC;
             }
-
-            output.open(mDumpFilepath, output.out | output.binary);
+            output.open(mDumpFilepath, std::ios::out | std::ios::binary);
         }
 
-        output.write((char *) buffer, n);
+        output.write(reinterpret_cast<char *>(buffer.data()), n);
     }
 
-    output.flush();
     output.close();
 }
 
 NeteaseCrypt::~NeteaseCrypt() {
-    if (mMetaData != NULL) {
-        delete mMetaData;
+    mMetaData = nullptr;
+    if (mFile.is_open()) {
+        mFile.close();
     }
-
-    mFile.close();
 }
 
 NeteaseCrypt::NeteaseCrypt(const std::string &path) {
@@ -254,7 +247,7 @@ NeteaseCrypt::NeteaseCrypt(const std::string &path) {
         throw std::invalid_argument("not netease protected file");
     }
 
-    if (!mFile.seekg(2, std::ifstream::cur)) {
+    if (!mFile.seekg(2, std::ios::cur)) {
         throw std::invalid_argument("can't seek file");
     }
 
@@ -298,21 +291,19 @@ NeteaseCrypt::NeteaseCrypt(const std::string &path) {
 
         // std::cout << modifyDecryptData << std::endl;
 
-        mMetaData = new NeteaseMusicMetadata(cJSON_Parse(meta_info.c_str()));
+        mMetaData = std::make_unique<NeteaseMusicMetadata>(cJSON_Parse(meta_info.c_str()));
     }
 
     // skip crc32 & unuse charset
-    if (!mFile.seekg(9, std::ifstream::cur)) {
+    if (!mFile.seekg(9, std::ios::cur)) {
         throw std::invalid_argument("can't seek file");
     }
 
     read(&read_len, sizeof(read_len));
 
     if (read_len > 0) {
-        char *imageData = (char *) malloc(read_len);
-        read(imageData, read_len);
-
-        mImageData = std::string(imageData, read_len);
+        mImageData.resize(read_len);
+        read(mImageData.data(), read_len);
     } else {
         printf("[Warn] `%s` missing album can't fix album image!\n", path.c_str());
     }

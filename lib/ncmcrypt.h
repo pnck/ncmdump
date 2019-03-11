@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <memory>
 
 namespace ncmdump {
 class NeteaseMusicMetadata;
@@ -22,7 +23,7 @@ private:
     int mBitrate;
 
 private:
-    cJSON *mRaw;
+    cJSON *mRaw{};
 
 public:
     explicit NeteaseMusicMetadata(cJSON *);
@@ -48,17 +49,17 @@ private:
     std::string mFilepath;
     std::string mDumpFilepath;
     NcmFormat mFormat;
-    std::string mImageData;
+    std::vector<uint8_t> mImageData;
     std::ifstream mFile;
     uint8_t mRC4KeyBox[256];
-    NeteaseMusicMetadata *mMetaData{};
+    std::unique_ptr<NeteaseMusicMetadata> mMetaData;
 
 private:
     bool isNcmFile();
     bool openFile(std::string const &);
     std::streamsize read(void *p, std::streamsize n);
     void buildRC4KeyBox(uint8_t *key, size_t keyLen);
-    std::string mimeType(std::string &data);
+    inline const char* mimeType(std::vector<uint8_t> &data);
 
 public:
     const std::string &filepath() const { return mFilepath; }

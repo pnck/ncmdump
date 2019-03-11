@@ -1,7 +1,6 @@
 release:
 	mkdir -p build_release
 	cd build_release && cmake -DCMAKE_BUILD_TYPE=RELEASE .. && make
-	strip -s build_release/ncmdump
 	mv -f build_release/ncmdump .
 debug:
 	mkdir -p build_debug

@@ -44,25 +44,25 @@ private:
     void setKey(const uint8_t (&key)[24]);
     void setKey(const uint8_t (&key)[32]);
 
-    void subBytes(uint8_t state[][4]);
-    void shiftRows(uint8_t state[][4]);
-    void mixColumns(uint8_t state[][4]);
-    void addRoundKey(uint8_t state[][4], uint8_t w[][4]);
+    inline void subBytes(uint8_t state[][4]);
+    inline void shiftRows(uint8_t state[][4]);
+    inline void mixColumns(uint8_t state[][4]);
+    inline void addRoundKey(uint8_t state[][4], uint8_t w[][4]);
 
-    void invSubBytes(uint8_t state[][4]);
-    void invShiftRows(uint8_t state[][4]);
-    void invMixColumns(uint8_t state[][4]);
+    inline void invSubBytes(uint8_t state[][4]);
+    inline void invShiftRows(uint8_t state[][4]);
+    inline void invMixColumns(uint8_t state[][4]);
 
     void keyExpansion();
 
-    //
-    uint8_t GF28Multi(uint8_t s, uint8_t a);
 
-    void rotWord(uint8_t w[]);
-    void subWord(uint8_t w[]);
+    inline uint8_t GF28Multi(uint8_t s, uint8_t a);
+
+    inline void rotWord(uint8_t w[]);
+    inline void subWord(uint8_t w[]);
 
     //get the secret key
-    void getKeyAt(uint8_t key[][4], int i);
+    inline void getKeyAt(uint8_t key[][4], int i);
 
 };
 template<size_t keylen>
